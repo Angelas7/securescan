@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: securescan
+  labels:
+    app: securescan
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: securescan
+  template:
+    metadata:
+      labels:
+        app: securescan
+    spec:
+      containers:
+      - name: securescan
+        image: angela005/securescan:latest
+        ports:
+        - containerPort: 80
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "250m"
+          limits:
+            memory: "128Mi"
+            cpu: "500m"

@@ -1,0 +1,950 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SecureScan — Web Security Scanner</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Syne:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0e0f;
+    --surface: #111518;
+    --surface2: #161c1f;
+    --border: #1e2830;
+    --border2: #253040;
+    --accent: #00e5a0;
+    --accent2: #00b87d;
+    --accent-dim: rgba(0,229,160,0.08);
+    --accent-glow: rgba(0,229,160,0.15);
+    --red: #ff4d4d;
+    --red-dim: rgba(255,77,77,0.1);
+    --amber: #ffb84d;
+    --amber-dim: rgba(255,184,77,0.1);
+    --green: #00e5a0;
+    --green-dim: rgba(0,229,160,0.1);
+    --blue: #4d9fff;
+    --blue-dim: rgba(77,159,255,0.1);
+    --text: #e8eef2;
+    --muted: #5a7080;
+    --muted2: #8aa0b0;
+    --mono: 'Share Tech Mono', monospace;
+    --head: 'Syne', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--head);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Grid background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,229,160,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,229,160,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Radial glow top */
+  body::after {
+    content: '';
+    position: fixed;
+    top: -200px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 900px;
+    height: 500px;
+    background: radial-gradient(ellipse at center, rgba(0,229,160,0.06) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .wrap {
+    position: relative;
+    z-index: 1;
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+
+  /* NAV */
+  nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .logo {
+    font-family: var(--head);
+    font-weight: 800;
+    font-size: 20px;
+    letter-spacing: -0.5px;
+    color: var(--text);
+  }
+
+  .logo span { color: var(--accent); }
+
+  .nav-badge {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--accent);
+    background: var(--accent-dim);
+    border: 1px solid rgba(0,229,160,0.2);
+    padding: 4px 12px;
+    border-radius: 20px;
+  }
+
+  /* HERO */
+  .hero {
+    padding: 80px 0 60px;
+    text-align: center;
+  }
+
+  .hero-tag {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--accent);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .hero-tag::before, .hero-tag::after {
+    content: '';
+    width: 40px;
+    height: 1px;
+    background: rgba(0,229,160,0.4);
+  }
+
+  h1 {
+    font-size: clamp(40px, 7vw, 72px);
+    font-weight: 800;
+    line-height: 1.0;
+    letter-spacing: -2px;
+    margin-bottom: 20px;
+    color: var(--text);
+  }
+
+  h1 em {
+    font-style: normal;
+    color: var(--accent);
+  }
+
+  .hero p {
+    font-size: 17px;
+    color: var(--muted2);
+    font-weight: 400;
+    max-width: 500px;
+    margin: 0 auto 48px;
+    line-height: 1.6;
+    font-family: var(--head);
+  }
+
+  /* SCANNER INPUT */
+  .scanner-card {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 16px;
+    padding: 32px;
+    margin-bottom: 40px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .scanner-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    opacity: 0.5;
+  }
+
+  .input-row {
+    display: flex;
+    gap: 12px;
+  }
+
+  .url-input {
+    flex: 1;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: 10px;
+    padding: 14px 18px;
+    font-family: var(--mono);
+    font-size: 15px;
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+
+  .url-input::placeholder { color: var(--muted); }
+
+  .url-input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-glow);
+  }
+
+  .scan-btn {
+    background: var(--accent);
+    color: #000;
+    border: none;
+    border-radius: 10px;
+    padding: 14px 28px;
+    font-family: var(--head);
+    font-weight: 700;
+    font-size: 14px;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .scan-btn:hover { background: var(--accent2); transform: translateY(-1px); }
+  .scan-btn:active { transform: translateY(0); }
+  .scan-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+  .scan-examples {
+    margin-top: 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .example-label {
+    font-size: 12px;
+    color: var(--muted);
+    font-family: var(--mono);
+  }
+
+  .example-url {
+    font-size: 12px;
+    color: var(--accent);
+    background: var(--accent-dim);
+    padding: 3px 10px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-family: var(--mono);
+    border: 1px solid rgba(0,229,160,0.15);
+    transition: all 0.15s;
+  }
+
+  .example-url:hover { background: rgba(0,229,160,0.15); }
+
+  /* LOADING */
+  .loading-panel {
+    display: none;
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 16px;
+    padding: 40px;
+    text-align: center;
+    margin-bottom: 32px;
+  }
+
+  .loading-panel.active { display: block; }
+
+  .scan-animation {
+    width: 60px;
+    height: 60px;
+    margin: 0 auto 24px;
+    position: relative;
+  }
+
+  .scan-ring {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    border: 2px solid transparent;
+    border-top-color: var(--accent);
+    animation: spin 1s linear infinite;
+  }
+
+  .scan-ring:nth-child(2) {
+    inset: 8px;
+    border-top-color: rgba(0,229,160,0.4);
+    animation-duration: 1.5s;
+    animation-direction: reverse;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .scan-status {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--accent);
+    margin-bottom: 8px;
+  }
+
+  .scan-substatus {
+    font-size: 13px;
+    color: var(--muted);
+  }
+
+  .scan-progress {
+    width: 200px;
+    height: 2px;
+    background: var(--border);
+    border-radius: 1px;
+    margin: 20px auto 0;
+    overflow: hidden;
+  }
+
+  .scan-progress-bar {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 1px;
+    width: 0%;
+    transition: width 0.3s;
+  }
+
+  /* RESULTS */
+  .results { display: none; }
+  .results.active { display: block; }
+
+  /* Risk Score */
+  .risk-header {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 16px;
+    padding: 28px 32px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+  }
+
+  .risk-score-circle {
+    width: 90px;
+    height: 90px;
+    border-radius: 50%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    position: relative;
+  }
+
+  .risk-score-circle.high {
+    background: var(--red-dim);
+    border: 2px solid var(--red);
+    box-shadow: 0 0 20px rgba(255,77,77,0.2);
+  }
+
+  .risk-score-circle.medium {
+    background: var(--amber-dim);
+    border: 2px solid var(--amber);
+    box-shadow: 0 0 20px rgba(255,184,77,0.2);
+  }
+
+  .risk-score-circle.low {
+    background: var(--green-dim);
+    border: 2px solid var(--green);
+    box-shadow: 0 0 20px rgba(0,229,160,0.2);
+  }
+
+  .risk-num {
+    font-size: 28px;
+    font-weight: 800;
+    line-height: 1;
+  }
+
+  .risk-score-circle.high .risk-num { color: var(--red); }
+  .risk-score-circle.medium .risk-num { color: var(--amber); }
+  .risk-score-circle.low .risk-num { color: var(--green); }
+
+  .risk-label-small {
+    font-size: 10px;
+    font-family: var(--mono);
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .risk-meta { flex: 1; }
+
+  .risk-level-badge {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 4px 14px;
+    border-radius: 20px;
+    margin-bottom: 8px;
+  }
+
+  .risk-level-badge.high { background: var(--red-dim); color: var(--red); border: 1px solid rgba(255,77,77,0.3); }
+  .risk-level-badge.medium { background: var(--amber-dim); color: var(--amber); border: 1px solid rgba(255,184,77,0.3); }
+  .risk-level-badge.low { background: var(--green-dim); color: var(--green); border: 1px solid rgba(0,229,160,0.3); }
+
+  .risk-domain { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
+  .risk-time { font-size: 12px; color: var(--muted); font-family: var(--mono); }
+
+  .risk-stats {
+    display: flex;
+    gap: 20px;
+    margin-left: auto;
+    flex-wrap: wrap;
+  }
+
+  .risk-stat {
+    text-align: center;
+    padding: 12px 20px;
+    background: var(--surface2);
+    border-radius: 10px;
+    min-width: 80px;
+  }
+
+  .risk-stat-num {
+    font-size: 24px;
+    font-weight: 800;
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+
+  .risk-stat-num.fail { color: var(--red); }
+  .risk-stat-num.warn { color: var(--amber); }
+  .risk-stat-num.pass { color: var(--green); }
+
+  .risk-stat-label { font-size: 11px; color: var(--muted); font-family: var(--mono); }
+
+  /* Check grid */
+  .section-title {
+    font-size: 13px;
+    font-family: var(--mono);
+    color: var(--muted);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .section-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  .checks-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+
+  @media (max-width: 600px) { .checks-grid { grid-template-columns: 1fr; } }
+
+  .check-card {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 12px;
+    padding: 18px 20px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .check-card.pass { border-left: 3px solid var(--green); }
+  .check-card.fail { border-left: 3px solid var(--red); }
+  .check-card.warn { border-left: 3px solid var(--amber); }
+  .check-card.info { border-left: 3px solid var(--blue); }
+
+  .check-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+  }
+
+  .check-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .check-icon {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    flex-shrink: 0;
+  }
+
+  .check-icon.pass { background: var(--green-dim); color: var(--green); }
+  .check-icon.fail { background: var(--red-dim); color: var(--red); }
+  .check-icon.warn { background: var(--amber-dim); color: var(--amber); }
+  .check-icon.info { background: var(--blue-dim); color: var(--blue); }
+
+  .check-value {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted2);
+    margin-bottom: 6px;
+    word-break: break-all;
+  }
+
+  .check-desc {
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+
+  /* Headers table */
+  .headers-card {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 32px;
+  }
+
+  .header-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .header-row:last-child { border-bottom: none; }
+
+  .header-status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-top: 4px;
+    flex-shrink: 0;
+  }
+
+  .header-status-dot.pass { background: var(--green); }
+  .header-status-dot.fail { background: var(--red); }
+  .header-status-dot.warn { background: var(--amber); }
+
+  .header-name {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--text);
+    min-width: 200px;
+    flex-shrink: 0;
+  }
+
+  .header-val {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted2);
+    flex: 1;
+    word-break: break-all;
+  }
+
+  .header-badge {
+    font-size: 10px;
+    font-family: var(--mono);
+    padding: 2px 8px;
+    border-radius: 10px;
+    flex-shrink: 0;
+  }
+
+  .header-badge.pass { background: var(--green-dim); color: var(--green); }
+  .header-badge.fail { background: var(--red-dim); color: var(--red); }
+  .header-badge.warn { background: var(--amber-dim); color: var(--amber); }
+
+  /* History */
+  .history-section { margin-top: 48px; }
+
+  .history-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .history-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 16px;
+    cursor: pointer;
+    transition: border-color 0.15s;
+  }
+
+  .history-item:hover { border-color: var(--border2); }
+
+  .history-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .history-dot.high { background: var(--red); }
+  .history-dot.medium { background: var(--amber); }
+  .history-dot.low { background: var(--green); }
+
+  .history-domain { font-size: 14px; font-weight: 500; flex: 1; }
+  .history-score { font-family: var(--mono); font-size: 13px; color: var(--muted2); }
+  .history-time { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+
+  .empty-history {
+    text-align: center;
+    padding: 32px;
+    color: var(--muted);
+    font-size: 14px;
+    border: 1px dashed var(--border);
+    border-radius: 12px;
+  }
+
+  /* Footer */
+  footer {
+    margin-top: 80px;
+    padding: 32px 0;
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: gap;
+  }
+
+  .footer-left { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+  .footer-right { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+  .footer-right span { color: var(--accent); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <nav>
+    <div class="logo">Secure<span>Scan</span></div>
+    <div class="nav-badge">v1.0.0 — DevOps Demo</div>
+  </nav>
+
+  <div class="hero">
+    <div class="hero-tag">Security Analysis Tool</div>
+    <h1>Audit any website<br>in <em>seconds</em></h1>
+    <p>Scan for HTTPS, security headers, open ports, and vulnerabilities. Get a risk score instantly.</p>
+  </div>
+
+  <!-- Scanner Input -->
+  <div class="scanner-card">
+    <div class="input-row">
+      <input
+        type="text"
+        class="url-input"
+        id="urlInput"
+        placeholder="https://example.com"
+        value=""
+      />
+      <button class="scan-btn" id="scanBtn" onclick="startScan()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        Scan Now
+      </button>
+    </div>
+    <div class="scan-examples">
+      <span class="example-label">Try:</span>
+      <span class="example-url" onclick="setUrl('https://google.com')">google.com</span>
+      <span class="example-url" onclick="setUrl('https://github.com')">github.com</span>
+      <span class="example-url" onclick="setUrl('http://example.com')">example.com</span>
+      <span class="example-url" onclick="setUrl('https://stackoverflow.com')">stackoverflow.com</span>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div class="loading-panel" id="loadingPanel">
+    <div class="scan-animation">
+      <div class="scan-ring"></div>
+      <div class="scan-ring"></div>
+    </div>
+    <div class="scan-status" id="scanStatus">Initializing scan...</div>
+    <div class="scan-substatus" id="scanSubstatus">Connecting to target host</div>
+    <div class="scan-progress">
+      <div class="scan-progress-bar" id="progressBar"></div>
+    </div>
+  </div>
+
+  <!-- Results -->
+  <div class="results" id="results">
+    <!-- Risk Header -->
+    <div class="risk-header" id="riskHeader"></div>
+
+    <!-- Core Checks -->
+    <div class="section-title">Core Security Checks</div>
+    <div class="checks-grid" id="checksGrid"></div>
+
+    <!-- Security Headers -->
+    <div class="section-title">HTTP Security Headers</div>
+    <div class="headers-card" id="headersCard"></div>
+  </div>
+
+  <!-- Scan History -->
+  <div class="history-section">
+    <div class="section-title">Scan History</div>
+    <div class="history-list" id="historyList">
+      <div class="empty-history">No scans yet. Run your first scan above.</div>
+    </div>
+  </div>
+
+  <footer>
+    <div class="footer-left">SecureScan — Web Security Scanner</div>
+    <div class="footer-right">Built with <span>DevOps Pipeline</span> · Docker · Kubernetes · Jenkins · AWS</div>
+  </footer>
+
+</div>
+
+<script>
+  let scanHistory = JSON.parse(localStorage.getItem('scanHistory') || '[]');
+
+  function setUrl(url) {
+    document.getElementById('urlInput').value = url;
+  }
+
+  function parseUrl(raw) {
+    let url = raw.trim();
+    if (!url.startsWith('http')) url = 'https://' + url;
+    try {
+      const u = new URL(url);
+      return { full: url, domain: u.hostname, protocol: u.protocol };
+    } catch {
+      return null;
+    }
+  }
+
+  const statusSteps = [
+    ['Resolving DNS...', 'Looking up hostname'],
+    ['Checking HTTPS...', 'Verifying SSL/TLS certificate'],
+    ['Scanning headers...', 'Fetching HTTP security headers'],
+    ['Checking ports...', 'Testing common open ports'],
+    ['Analyzing vulnerabilities...', 'Running pattern checks'],
+    ['Calculating risk score...', 'Finalizing report'],
+  ];
+
+  function startScan() {
+    const raw = document.getElementById('urlInput').value;
+    const parsed = parseUrl(raw);
+    if (!parsed) { alert('Please enter a valid URL'); return; }
+
+    document.getElementById('scanBtn').disabled = true;
+    document.getElementById('loadingPanel').classList.add('active');
+    document.getElementById('results').classList.remove('active');
+
+    let step = 0;
+    const bar = document.getElementById('progressBar');
+    const statusEl = document.getElementById('scanStatus');
+    const subEl = document.getElementById('scanSubstatus');
+
+    const interval = setInterval(() => {
+      if (step < statusSteps.length) {
+        statusEl.textContent = statusSteps[step][0];
+        subEl.textContent = statusSteps[step][1];
+        bar.style.width = ((step + 1) / statusSteps.length * 100) + '%';
+        step++;
+      } else {
+        clearInterval(interval);
+        setTimeout(() => showResults(parsed), 400);
+      }
+    }, 500);
+  }
+
+  function simulateScan(parsed) {
+    const isHttps = parsed.protocol === 'https:';
+    const domain = parsed.domain;
+
+    // Deterministically vary results by domain
+    const seed = domain.split('').reduce((a, c) => a + c.charCodeAt(0), 0);
+    const r = (n) => (seed * 31 + n * 17) % 100;
+
+    const hasCSP = r(1) > 40;
+    const hasHSTS = isHttps && r(2) > 30;
+    const hasXFrame = r(3) > 35;
+    const hasXContent = r(4) > 45;
+    const hasReferrer = r(5) > 50;
+    const hasPermissions = r(6) > 60;
+    const hasCORS = r(7) > 55;
+    const certValid = isHttps;
+    const openPorts = [];
+    if (r(8) > 70) openPorts.push(22);
+    if (r(9) > 80) openPorts.push(3306);
+    if (r(10) > 75) openPorts.push(6379);
+    const hasClickjacking = !hasXFrame;
+    const hasMixedContent = isHttps && r(11) > 75;
+
+    let score = 0;
+    if (!isHttps) score += 30;
+    if (!hasCSP) score += 15;
+    if (!hasHSTS) score += 10;
+    if (!hasXFrame) score += 10;
+    if (!hasXContent) score += 8;
+    if (openPorts.includes(22)) score += 10;
+    if (openPorts.includes(3306)) score += 15;
+    if (openPorts.includes(6379)) score += 12;
+    if (hasMixedContent) score += 5;
+    score = Math.min(score, 95);
+
+    const level = score >= 60 ? 'high' : score >= 30 ? 'medium' : 'low';
+
+    return { isHttps, hasCSP, hasHSTS, hasXFrame, hasXContent, hasReferrer, hasPermissions, hasCORS, certValid, openPorts, hasClickjacking, hasMixedContent, score, level, domain };
+  }
+
+  function showResults(parsed) {
+    const data = simulateScan(parsed);
+    document.getElementById('loadingPanel').classList.remove('active');
+    document.getElementById('results').classList.add('active');
+    document.getElementById('scanBtn').disabled = false;
+
+    // Risk header
+    const passCount = [data.isHttps, data.hasCSP, data.hasHSTS, data.hasXFrame, data.hasXContent, data.hasReferrer].filter(Boolean).length;
+    const failCount = 6 - passCount;
+    document.getElementById('riskHeader').innerHTML = `
+      <div class="risk-score-circle ${data.level}">
+        <div class="risk-num">${data.score}</div>
+        <div class="risk-label-small">/ 100</div>
+      </div>
+      <div class="risk-meta">
+        <div class="risk-level-badge ${data.level}">${data.level} risk</div>
+        <div class="risk-domain">${data.domain}</div>
+        <div class="risk-time">Scanned at ${new Date().toLocaleTimeString()} · ${parsed.full}</div>
+      </div>
+      <div class="risk-stats">
+        <div class="risk-stat"><div class="risk-stat-num fail">${failCount}</div><div class="risk-stat-label">Failed</div></div>
+        <div class="risk-stat"><div class="risk-stat-num pass">${passCount}</div><div class="risk-stat-label">Passed</div></div>
+        <div class="risk-stat"><div class="risk-stat-num warn">${data.openPorts.length}</div><div class="risk-stat-label">Open Ports</div></div>
+      </div>
+    `;
+
+    // Core checks
+    const checks = [
+      {
+        name: 'HTTPS / TLS',
+        status: data.isHttps ? 'pass' : 'fail',
+        value: data.isHttps ? 'SSL/TLS Active' : 'Plain HTTP — No Encryption',
+        desc: data.isHttps ? 'Connection is encrypted. Certificate appears valid.' : 'Site uses plain HTTP. All traffic is unencrypted and visible to attackers.',
+        icon: data.isHttps ? '✓' : '✗'
+      },
+      {
+        name: 'SSL Certificate',
+        status: data.certValid ? 'pass' : 'fail',
+        value: data.certValid ? 'Certificate Valid' : 'No Certificate',
+        desc: data.certValid ? 'Certificate is trusted and not expired.' : 'No valid SSL certificate found.',
+        icon: data.certValid ? '✓' : '✗'
+      },
+      {
+        name: 'Open Ports',
+        status: data.openPorts.length === 0 ? 'pass' : data.openPorts.length <= 1 ? 'warn' : 'fail',
+        value: data.openPorts.length === 0 ? 'No exposed ports detected' : `Ports open: ${data.openPorts.join(', ')}`,
+        desc: data.openPorts.length === 0 ? 'No unnecessary ports are publicly exposed.' : `Port ${data.openPorts.join(', ')} exposed. This may allow unauthorized access.`,
+        icon: data.openPorts.length === 0 ? '✓' : '!'
+      },
+      {
+        name: 'Clickjacking',
+        status: data.hasClickjacking ? 'fail' : 'pass',
+        value: data.hasClickjacking ? 'X-Frame-Options missing' : 'Protected',
+        desc: data.hasClickjacking ? 'Site may be embedded in iframes — susceptible to clickjacking attacks.' : 'X-Frame-Options header prevents iframe embedding.',
+        icon: data.hasClickjacking ? '✗' : '✓'
+      },
+      {
+        name: 'Mixed Content',
+        status: data.hasMixedContent ? 'warn' : 'pass',
+        value: data.hasMixedContent ? 'Mixed content detected' : 'No mixed content',
+        desc: data.hasMixedContent ? 'HTTP resources loaded on HTTPS page — degrades security.' : 'All resources loaded over HTTPS.',
+        icon: data.hasMixedContent ? '!' : '✓'
+      },
+      {
+        name: 'Content Security Policy',
+        status: data.hasCSP ? 'pass' : 'fail',
+        value: data.hasCSP ? 'CSP Enabled' : 'CSP Header Missing',
+        desc: data.hasCSP ? 'CSP header found — helps prevent XSS attacks.' : 'No CSP header. Site is vulnerable to cross-site scripting (XSS).',
+        icon: data.hasCSP ? '✓' : '✗'
+      },
+    ];
+
+    document.getElementById('checksGrid').innerHTML = checks.map(c => `
+      <div class="check-card ${c.status}">
+        <div class="check-header">
+          <div class="check-name">${c.name}</div>
+          <div class="check-icon ${c.status}">${c.icon}</div>
+        </div>
+        <div class="check-value">${c.value}</div>
+        <div class="check-desc">${c.desc}</div>
+      </div>
+    `).join('');
+
+    // Security Headers
+    const headers = [
+      { name: 'Content-Security-Policy', present: data.hasCSP, val: data.hasCSP ? "default-src 'self'; script-src 'self'" : 'Not set' },
+      { name: 'Strict-Transport-Security', present: data.hasHSTS, val: data.hasHSTS ? 'max-age=31536000; includeSubDomains' : 'Not set' },
+      { name: 'X-Frame-Options', present: data.hasXFrame, val: data.hasXFrame ? 'SAMEORIGIN' : 'Not set' },
+      { name: 'X-Content-Type-Options', present: data.hasXContent, val: data.hasXContent ? 'nosniff' : 'Not set' },
+      { name: 'Referrer-Policy', present: data.hasReferrer, val: data.hasReferrer ? 'strict-origin-when-cross-origin' : 'Not set' },
+      { name: 'Permissions-Policy', present: data.hasPermissions, val: data.hasPermissions ? 'geolocation=(), microphone=()' : 'Not set' },
+      { name: 'Access-Control-Allow-Origin', present: data.hasCORS, val: data.hasCORS ? 'https://trusted-domain.com' : 'Not set', warn: data.hasCORS },
+    ];
+
+    document.getElementById('headersCard').innerHTML = headers.map(h => `
+      <div class="header-row">
+        <div class="header-status-dot ${h.present ? (h.warn ? 'warn' : 'pass') : 'fail'}"></div>
+        <div class="header-name">${h.name}</div>
+        <div class="header-val">${h.val}</div>
+        <div class="header-badge ${h.present ? (h.warn ? 'warn' : 'pass') : 'fail'}">${h.present ? 'PRESENT' : 'MISSING'}</div>
+      </div>
+    `).join('');
+
+    // Save to history
+    const entry = { domain: data.domain, score: data.score, level: data.level, time: new Date().toLocaleString(), url: parsed.full };
+    scanHistory.unshift(entry);
+    if (scanHistory.length > 20) scanHistory.pop();
+    localStorage.setItem('scanHistory', JSON.stringify(scanHistory));
+    renderHistory();
+  }
+
+  function renderHistory() {
+    const el = document.getElementById('historyList');
+    if (!scanHistory.length) {
+      el.innerHTML = '<div class="empty-history">No scans yet. Run your first scan above.</div>';
+      return;
+    }
+    el.innerHTML = scanHistory.slice(0, 8).map(h => `
+      <div class="history-item" onclick="document.getElementById('urlInput').value='${h.url}'; startScan()">
+        <div class="history-dot ${h.level}"></div>
+        <div class="history-domain">${h.domain}</div>
+        <div class="history-score">Score: ${h.score}/100</div>
+        <div class="history-time">${h.time}</div>
+      </div>
+    `).join('');
+  }
+
+  renderHistory();
+
+  document.getElementById('urlInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') startScan();
+  });
+</script>
+</body>
+</html>
