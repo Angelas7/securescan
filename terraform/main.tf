@@ -11,17 +11,15 @@ provider "aws" {
   region = var.aws_region
 }
 
-# Elastic Beanstalk Application
 resource "aws_elastic_beanstalk_application" "securescan" {
   name        = var.app_name
   description = "SecureScan Web Security Scanner"
 }
 
-# Elastic Beanstalk Environment
 resource "aws_elastic_beanstalk_environment" "securescan_env" {
   name                = "${var.app_name}-env"
   application         = aws_elastic_beanstalk_application.securescan.name
-  solution_stack_name = "64bit Amazon Linux 2 v3.5.9 running Docker"
+solution_stack_name = "64bit Amazon Linux 2023 v4.12.1 running Docker"
 
   setting {
     namespace = "aws:autoscaling:launchconfiguration"
@@ -42,10 +40,11 @@ resource "aws_elastic_beanstalk_environment" "securescan_env" {
   }
 }
 
-# EC2 for Jenkins
 resource "aws_instance" "jenkins" {
   ami           = "ami-0c7217cdde317cfec"
   instance_type = "t3.micro"
+
+  vpc_security_group_ids = [aws_security_group.jenkins_sg.id]
 
   tags = {
     Name = "securescan-jenkins"
@@ -62,7 +61,6 @@ resource "aws_instance" "jenkins" {
   EOF
 }
 
-# Security Group for Jenkins
 resource "aws_security_group" "jenkins_sg" {
   name        = "jenkins-sg"
   description = "Allow Jenkins and SSH"
